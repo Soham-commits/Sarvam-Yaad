@@ -27,7 +27,7 @@ Yaad is a responsive hackathon prototype for preserving a familiar voice and usi
 - **One orb, one screen:** preserve a voice, ask a question, or hear new content without switching between memory and conversation tabs. The main viewport does not scroll.
 - **Preserve a voice directly:** tap the orb, confirm permission, then speak clearly for 10–12 seconds. Tap again to save, or let recording finish automatically. No upload is needed.
 - **Talk in the saved voice:** subsequent questions use the same reference. A new question never replaces the voice. Ask for a poem, story, or an answer about a saved memory.
-- **Use the bottom dock:** microphone mute, start/end session, explicit text-input toggle, and new session stay above the device's bottom safe area. Starting fresh keeps saved stories, voice, and archived history.
+- **Use the bottom dock:** one main button keeps a voice, starts talking, or ends the conversation. Mute appears during a conversation. Type a message and New conversation are in Menu → Settings. Starting fresh keeps saved stories, voice, and archived history.
 - **Hear replies first:** no full answer textbox appears. Optional subtitles reveal small chunks as the reply plays. Timing is estimated from audio progress, not provider word timestamps or live model-token streaming.
 - **Open the circular hamburger menu:** seven spring-animated, glass shortcuts open History, Voice, Privacy, Settings, Save story, Hear poem, and Guide. Labels stay visible on phones; secondary panels keep their existing controls.
 - **Keep secondary features in the hamburger menu:** unified conversation/memory history, voice naming and re-recording, privacy/data controls, reply language, subtitle preferences, and hands-free settings.

@@ -1,0 +1,37 @@
+/* Keep the existing layout rules; only import Tailwind's theme and utilities. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+:root {
+  --background: #ffffff;
+  --foreground: #596d88;
+  --primary: #7185a0;
+  --primary-foreground: #ffffff;
+  --secondary: #edf2f8;
+  --secondary-foreground: #7186a2;
+  --muted: #eef2f7;
+  --accent: #e5edf7;
+  --accent-foreground: #607b9e;
+  --destructive: #a77f79;
+  --destructive-foreground: #ffffff;
+  --border: #dce5f0;
+  --input: #dce5f0;
+  --ring: #91a5c1;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}

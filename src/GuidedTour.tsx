@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Headphones, Mic, MessageCircle, X } from 'lucide-react';
 import './tour.css';
+import { ButtonWithIcon, IconButton } from './components/ui/button-witn-icon';
 
 export const TOUR_KEY = 'yaad-guided-tour-v4';
 
 const steps = [
   { target: null, icon: MessageCircle, label: 'WELCOME TO YAAD', title: 'One orb.\nYour voice.', text: 'Keep a voice once, then have a conversation or hear something new in that same voice.', hint: 'Your voice stays in this browser. New questions never replace it.' },
   { target: 'record', icon: Mic, label: 'TAP THE ORB', title: 'Record, then talk.', text: 'Tap the orb to preserve a voice. Confirm permission, then speak for 10–12 seconds. Once saved, the same orb starts a conversation.', hint: 'The orb reacts when you speak and when it replies.' },
-  { target: 'dock', icon: Headphones, label: 'ALWAYS WITHIN REACH', title: 'Controls stay at the bottom.', text: 'Mute, end a session, type a message, or start fresh from the dock. History, voice settings, language, and privacy live in the hamburger menu.', hint: 'Replies are spoken. Optional subtitles follow audio playback.' },
+  { target: 'dock', icon: Headphones, label: 'ALWAYS WITHIN REACH', title: 'Controls stay at the bottom.', text: 'Keep a voice, then tap Talk to begin. End your conversation from the same button. Mute appears during a conversation. Typing, a fresh session, history, and settings live in the top-right menu.', hint: 'Replies are spoken. Optional subtitles follow audio playback.' },
 ];
 
 type Rect = { left: number; top: number; width: number; height: number };
@@ -124,7 +125,7 @@ export function GuidedTour({ step, mode, layoutKey, onStep, onClose }: Props) {
       <div className="tour-blocker" style={{left:rect.left+rect.width,top:rect.top,right:0,height:rect.height}}/>
     </> : <div className="tour-scrim"/>}
     <div ref={panel} className={`tour-card tour-${placement} ${step===1 && layoutKey.startsWith('language-') ? 'tour-language-open' : ''}`} role="dialog" aria-modal={!rect} aria-labelledby="tour-title" aria-describedby="tour-description" style={{left:placement==='side-left' ? rect!.left-width-16 : left,top,width,maxHeight:viewport.height-edge*2}}>
-      <div className="tour-card-header"><span className="tour-brand">yaad<span>.</span><span className="tour-guide-label">YOUR GUIDE</span></span><button className="tour-close" aria-label="Close tutorial" onClick={onClose}><X size={17}/></button></div>
+      <div className="tour-card-header"><span className="tour-brand">yaad<span>.</span><span className="tour-guide-label">YOUR GUIDE</span></span><IconButton className="tour-close" aria-label="Close tutorial" onClick={onClose}><X size={17}/></IconButton></div>
       <div className="tour-copy" key={`${step}-${isRecording}-${isProcessing}`}>
         <div className="tour-step-icon"><Icon size={23} strokeWidth={1.5}/></div>
         <div className="tour-label">{entry.label}</div>
@@ -134,8 +135,8 @@ export function GuidedTour({ step, mode, layoutKey, onStep, onClose }: Props) {
       </div>
       <div className="tour-footer"><div className="tour-progress" aria-label={`Step ${step+1} of ${steps.length}`}>{steps.map((_,i) => <span key={i} className={i===step ? 'current' : i<step ? 'complete' : ''}/>)}</div><span className="tour-count">{step+1} / {steps.length}</span></div>
       <div className="tour-actions">
-        {step > 0 ? <button className="tour-back" disabled={isRecording || isProcessing} onClick={() => onStep(step-1)}><ArrowLeft size={14}/>Back</button> : <button className="tour-back" onClick={onClose}>Explore on my own</button>}
-        <button className="tour-next" disabled={isRecording || isProcessing} onClick={() => step === steps.length-1 ? onClose() : onStep(step+1)}>{step===0 ? 'Show me around' : step===steps.length-1 ? 'Start' : 'Next'}<ArrowRight size={15}/></button>
+        {step > 0 ? <ButtonWithIcon variant="secondary" size="sm" icon={<ArrowLeft size={14}/>} className="tour-back" disabled={isRecording || isProcessing} onClick={() => onStep(step-1)}>Back</ButtonWithIcon> : <ButtonWithIcon variant="secondary" size="sm" className="tour-back" onClick={onClose}>Skip guide</ButtonWithIcon>}
+        <ButtonWithIcon size="sm" icon={<ArrowRight size={15}/>} className="tour-next" disabled={isRecording || isProcessing} onClick={() => step === steps.length-1 ? onClose() : onStep(step+1)}>{step===0 ? 'Show me around' : step===steps.length-1 ? 'Start' : 'Next'}</ButtonWithIcon>
       </div>
 
     </div>
