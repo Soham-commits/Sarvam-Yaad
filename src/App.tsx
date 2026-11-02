@@ -2,7 +2,8 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { ArrowDownToLine, AudioLines, Check, ChevronDown, Ellipsis, Headphones, Mic, Pause, Plus, ShieldCheck, Square, X } from 'lucide-react';
 import { Orb } from './Orb';
 
-type Mode = 'idle' | 'connecting' | 'listening' | 'ready' | 'talking';
+type Mode = 'idle' | 'connecting' | 'listening' | 'ready' | 'talking' | 'thinking';
+type Memory = {id:string; text:string};
 export default function App() {
   const [mode, setMode] = useState<Mode>('idle');
   const [seconds, setSeconds] = useState(0);
@@ -11,6 +12,14 @@ export default function App() {
   const [language, setLanguage] = useState('English');
   const [menu, setMenu] = useState<'language' | 'more' | null>(null);
   const [error, setError] = useState('');
+  const [task, setTask] = useState<'record' | 'ask'>('record');
+  const [typed, setTyped] = useState('');
+  const [showText, setShowText] = useState(false);
+  const [memories, setMemories] = useState<Memory[]>(() => {
+    try { const saved = JSON.parse(localStorage.getItem('yaad-memories') || '[]'); return Array.isArray(saved) ? saved.filter(m => typeof m.id === 'string' && typeof m.text === 'string').slice(-15) : []; } catch { return []; }
+  });
+  const [answer, setAnswer] = useState<{transcript:string; reply:string; sources:string[]; elapsed:number} | null>(null);
+  const [backend, setBackend] = useState(false);
   const inputLevel = useRef(0), outputLevel = useRef(0);
   const context = useRef<AudioContext | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
@@ -22,6 +31,33 @@ export default function App() {
   const audio = useRef<HTMLAudioElement | null>(null);
   const upload = useRef<HTMLInputElement | null>(null);
   const currentUrl = useRef('');
+  const busy = mode === 'thinking' || mode === 'connecting';
+  useEffect(() => { fetch('/api/health').then(r => { if(r.ok) setBackend(true); }).catch(() => setBackend(false)); }, []);
+  useEffect(() => { try { localStorage.setItem('yaad-memories', JSON.stringify(memories)); } catch { setError('Browser storage is full. Keep this tab open to retain your memories.'); } }, [memories]);
+  async function converse(blob?: Blob, text?: string) {
+    setMode('thinking'); setError(''); setAnswer(null); audio.current?.pause(); stopMeter();
+    try {
+      await getContext();
+      let encoded: string | undefined;
+      if (blob) encoded = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(blob); });
+      const response = await fetch('/api/converse', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({audio:encoded,mime:blob?.type,text,mode:task,language:language === 'मराठी' ? 'mr-IN' : language === 'हिन्दी' ? 'hi-IN' : 'en-IN', memories}), signal:AbortSignal.timeout(120000)});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Sarvam request failed. Please try again.');
+      setBackend(true); setAnswer(result); setTyped(''); setShowText(false);
+      if (task === 'record') setMemories(previous => [...previous, {id:crypto.randomUUID(),text:result.transcript}].slice(-15));
+      if (result.warning) setError(result.warning);
+      if (result.audio) {
+        const bytes = Uint8Array.from(atob(result.audio), c => c.charCodeAt(0));
+        const voiceBlob = new Blob([bytes],{type:'audio/wav'});
+        replaceAudio(voiceBlob,'wav');
+        if (audio.current) {
+          audio.current.src = currentUrl.current;
+          try { const ctx = await getContext(); playbackSource.current ??= ctx.createMediaElementSource(audio.current); meter(playbackSource.current,ctx,true); await audio.current.play(); setMode('talking'); }
+          catch { stopMeter(); setMode('ready'); }
+        }
+      } else setMode('ready');
+    } catch (e) { setMode(currentUrl.current ? 'ready' : 'idle'); setError(e instanceof Error ? e.message : 'Couldn’t reach Sarvam. Please try again.'); }
+  }
 
   function stopMeter() {
     cancelAnimationFrame(frame.current);
@@ -55,7 +91,7 @@ export default function App() {
   }
   async function record() {
     setMenu(null); setError('');
-    if (mode === 'connecting') return;
+    if (busy) return;
     if (mode === 'listening') { recorder.current?.stop(); return; }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
       setError('Recording needs a supported browser on HTTPS or localhost. You can also add an audio file.'); return;
@@ -72,7 +108,7 @@ export default function App() {
       r.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
       r.onstop = () => {
         s.getTracks().forEach(t => t.stop()); stream.current = null; stopMeter();
-        if (chunks.length) replaceAudio(new Blob(chunks, { type: r.mimeType }), r.mimeType.includes('mp4') ? 'm4a' : 'webm');
+        if (chunks.length) { const blob = new Blob(chunks, { type:r.mimeType }); replaceAudio(blob,r.mimeType.includes('mp4') ? 'm4a' : 'webm'); void converse(blob); }
         else { setMode(currentUrl.current ? 'ready' : 'idle'); setError('No audio was captured. Try recording again.'); }
       };
       recorder.current = r; setSeconds(0); r.start(250); setMode('listening');
@@ -95,7 +131,8 @@ export default function App() {
   useEffect(() => {
     if (mode !== 'listening') return;
     const timer = window.setInterval(() => setSeconds(s => s + 1), 1000);
-    return () => clearInterval(timer);
+    const limit = window.setTimeout(() => { if (recorder.current?.state === 'recording') recorder.current.stop(); }, 25000);
+    return () => { clearInterval(timer); clearTimeout(limit); };
   }, [mode]);
   useEffect(() => () => {
     if (recorder.current?.state === 'recording') { recorder.current.onstop = null; recorder.current.stop(); }
@@ -104,11 +141,11 @@ export default function App() {
     if (currentUrl.current) URL.revokeObjectURL(currentUrl.current);
   }, []);
   const active = mode === 'listening' || mode === 'talking';
-  const title = mode === 'listening' ? 'Some stories start with you.' : mode === 'talking' ? 'A voice worth keeping.' : mode === 'ready' ? 'A little memory, held close.' : 'Every voice holds a story.';
-  const subtitle = mode === 'listening' ? 'Take your time. I’m listening.' : mode === 'talking' ? 'Listening back to your memory.' : mode === 'ready' ? 'Listen back, or tell another story.' : 'A little space for the stories that stay.';
+  const title = mode === 'thinking' ? 'Finding the words.' : task === 'ask' ? 'Your memories, a little closer.' : mode === 'listening' ? 'Some stories start with you.' : mode === 'talking' ? 'A voice worth keeping.' : mode === 'ready' ? 'A little memory, held close.' : 'Every voice holds a story.';
+  const subtitle = mode === 'thinking' ? 'Sarvam is listening, remembering, and replying.' : mode === 'listening' ? 'Tell a short story. Up to 25 seconds.' : mode === 'talking' ? 'Sarvam’s spoken reply · AI narrator' : task === 'ask' ? 'Ask a question about the stories you’ve saved.' : 'A little space for the stories that stay.';
   const clock = `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
-  return <main className="phone-shell">
+  return <main className={`phone-shell ${answer ? 'has-answer' : ''} ${showText ? 'has-text' : ''}`}>
     <header className="appbar">
       <a className="brand" href="#" onClick={e => e.preventDefault()} aria-label="Yaad home"><span className="brand-symbol"><AudioLines size={17} strokeWidth={1.7}/></span>yaad<span className="brand-period">.</span></a>
       <div className="header-actions">
@@ -116,29 +153,30 @@ export default function App() {
           {menu === 'language' && <div className="popover language-menu">{['English', 'मराठी', 'हिन्दी'].map(l => <button key={l} onClick={() => { setLanguage(l); setMenu(null); }}>{l}{l === language && <Check size={14}/>}</button>)}<p>Memory language label</p></div>}
         </div>
         <div className="popover-anchor"><button className="icon-button more" aria-label="More options" aria-expanded={menu === 'more'} onClick={() => setMenu(menu === 'more' ? null : 'more')}><Ellipsis size={21}/></button>
-          {menu === 'more' && <div className="popover about-menu"><strong>Your voice, your space.</strong><p>This UI preview records and plays audio on your device. AI conversation and voice cloning aren’t connected yet.</p>{audioUrl && <a href={audioUrl} download={`yaad-memory.${format}`}><ArrowDownToLine size={14}/>Download memory</a>}</div>}
+          {menu === 'more' && <div className="popover about-menu"><strong>Your voice, your space.</strong><p>Speech is sent to Sarvam for transcription and replies. Saved transcripts stay in this browser. Spoken replies use an AI narrator, not a cloned family voice.</p><button onClick={() => {setShowText(v => !v);setMenu(null);}}>Type instead</button>{memories.length > 0 && <button onClick={() => { if(window.confirm('Delete saved memory transcripts from this browser?')) {setMemories([]);setAnswer(null);setMenu(null);} }}>Clear {memories.length} saved memories</button>}{audioUrl && <a href={audioUrl} download={`yaad-reply.${format}`}><ArrowDownToLine size={14}/>Download audio</a>}</div>}
         </div>
       </div>
     </header>
     <section className="experience">
-      <div className="intro"><div className="eyebrow"><span/>VOICE TIME CAPSULE</div><h1>{title}</h1><p>{subtitle}</p></div>
+      <div className="intro"><div className="eyebrow"><span/>{backend ? 'SARVAM CONNECTED' : 'VOICE TIME CAPSULE'}{memories.length > 0 && ` · ${memories.length} SAVED`}</div><h1>{title}</h1><p>{subtitle}</p><div className="task-switch"><button disabled={busy || mode === 'listening'} aria-pressed={task === 'record'} onClick={() => {setTask('record');setAnswer(null);}}>Tell a story</button><button disabled={busy || mode === 'listening'} aria-pressed={task === 'ask'} onClick={() => {setTask('ask');setAnswer(null);}}>Ask my capsule</button></div></div>
       <div className={`orb-stage ${active ? 'is-active' : ''}`} aria-label={mode === 'listening' ? 'Orb reacting to your microphone' : mode === 'talking' ? 'Orb reacting to audio playback' : 'Animated silver voice orb'}>
         <div className="orb-aura"/>
-        <Suspense fallback={<div className="orb-loading"/>}><Orb className="orb-canvas" colors={['#eef0f3', '#bac2cc']} seed={73} agentState={mode === 'listening' ? 'listening' : mode === 'talking' ? 'talking' : null} volumeMode="manual" inputVolumeRef={inputLevel} outputVolumeRef={outputLevel}/></Suspense>
+        <Suspense fallback={<div className="orb-loading"/>}><Orb className="orb-canvas" colors={['#eef0f3', '#bac2cc']} seed={73} agentState={mode === 'thinking' ? 'thinking' : mode === 'listening' ? 'listening' : mode === 'talking' ? 'talking' : null} volumeMode={mode === 'thinking' ? 'auto' : 'manual'} inputVolumeRef={inputLevel} outputVolumeRef={outputLevel}/></Suspense>
         <div className="orb-shadow"/>
       </div>
-      <div className="orb-caption" aria-live="polite"><span className={`state-dot ${active ? 'active' : ''}`}/>{mode === 'listening' ? `Listening · ${clock}` : mode === 'talking' ? 'Playing your memory' : mode === 'connecting' ? 'Connecting your microphone' : mode === 'ready' ? 'Memory ready to replay' : 'Ready when you are'}</div>
-      <div className="prompt-area"><span className="prompt-label">A PLACE TO BEGIN</span><p>“What’s a small memory<br/>that still makes you smile?”</p></div>
+      <div className="orb-caption" aria-live="polite"><span className={`state-dot ${active || mode === 'thinking' ? 'active' : ''}`}/>{mode === 'thinking' ? 'Working with Sarvam…' : mode === 'listening' ? `Listening · ${clock}` : mode === 'talking' ? 'Speaking with Sarvam' : mode === 'connecting' ? 'Connecting your microphone' : mode === 'ready' ? 'Reply ready to replay' : 'Ready when you are'}</div>
+      {answer ? <div className="answer-card" aria-live="polite"><span className="prompt-label">{task === 'record' ? 'MEMORY SAVED' : 'FROM YOUR CAPSULE'} · {answer.elapsed}s</span><p className="heard">You: {answer.transcript}</p><p>{answer.reply}</p>{answer.sources.map(id => <details key={id}><summary>Original memory</summary><p>{memories.find(m => m.id === id)?.text}</p></details>)}</div> : <div className="prompt-area"><span className="prompt-label">{task === 'ask' ? `${memories.length} MEMORIES TO EXPLORE` : 'A PLACE TO BEGIN'}</span><p>{task === 'ask' ? '“What did I tell you about my childhood?”' : '“What’s a small memory that still makes you smile?”'}</p></div>}
+      {showText && <form className="text-entry" onSubmit={e => {e.preventDefault();if(typed.trim() && !busy) void converse(undefined,typed.trim());}}><input aria-label="Type a memory or question" value={typed} onChange={e => setTyped(e.target.value)} placeholder={task === 'ask' ? 'Ask about a saved memory…' : 'Tell a short memory…'} disabled={busy}/><button disabled={busy || !typed.trim()}>Send</button></form>}
     </section>
     <footer className="bottom-area">
       {error && <div role="alert" className="error"><span>{error}</span><button aria-label="Dismiss message" onClick={() => setError('')}><X size={15}/></button></div>}
       <div className="control-dock">
-        <button className="secondary-control" aria-label="Add a voice note" disabled={mode === 'listening' || mode === 'connecting'} onClick={() => { audio.current?.pause(); stopMeter(); if (audioUrl) setMode('ready'); upload.current?.click(); }}><Plus size={23} strokeWidth={1.5}/></button>
-        <button className={`record-control ${mode === 'listening' ? 'recording' : ''}`} disabled={mode === 'connecting'} onClick={() => void record()} aria-label={mode === 'listening' ? 'Finish recording' : 'Start recording'}>{mode === 'listening' ? <Square size={17} fill="currentColor"/> : <Mic size={23} strokeWidth={1.7}/>}</button>
-        <button className="secondary-control" aria-label={mode === 'talking' ? 'Pause memory' : 'Listen to memory'} disabled={!audioUrl || mode === 'listening' || mode === 'connecting'} onClick={() => void play()}>{mode === 'talking' ? <Pause size={21} fill="currentColor"/> : <Headphones size={22} strokeWidth={1.5}/>}</button>
+        <button className="secondary-control" aria-label="Type instead" disabled={mode === 'listening' || busy} onClick={() => setShowText(v => !v)}><Plus size={23} strokeWidth={1.5}/></button>
+        <button className={`record-control ${mode === 'listening' ? 'recording' : ''}`} disabled={busy} onClick={() => void record()} aria-label={mode === 'listening' ? 'Finish recording' : 'Start recording'}>{mode === 'listening' ? <Square size={17} fill="currentColor"/> : <Mic size={23} strokeWidth={1.7}/>}</button>
+        <button className="secondary-control" aria-label={mode === 'talking' ? 'Pause reply' : 'Listen to reply'} disabled={!audioUrl || mode === 'listening' || busy} onClick={() => void play()}>{mode === 'talking' ? <Pause size={21} fill="currentColor"/> : <Headphones size={22} strokeWidth={1.5}/>}</button>
       </div>
       <p className="tap-hint">{mode === 'listening' ? 'Tap to finish your memory' : mode === 'connecting' ? 'Allow microphone access to begin' : 'Tap the mic. Make a little memory.'}</p>
-      <div className="privacy"><ShieldCheck size={12} strokeWidth={1.5}/><span>Audio stays on this device</span></div>
+      <div className="privacy"><ShieldCheck size={12} strokeWidth={1.5}/><span>Processed by Sarvam · Memories saved on this device</span></div>
     </footer>
     <input className="visually-hidden" ref={upload} type="file" accept="audio/*" aria-label="Choose an audio memory" onChange={e => { const f = e.target.files?.[0]; if (f) { replaceAudio(f, f.name.split('.').pop() || 'audio'); setError(''); } e.target.value = ''; }}/>
     <audio ref={audio} src={audioUrl || undefined} onEnded={() => { stopMeter(); setMode('ready'); }} onError={() => { if (audioUrl) { stopMeter(); setMode('ready'); setError('This audio format isn’t supported by your browser. Try MP3, WAV, or M4A.'); } }}/>
