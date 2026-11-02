@@ -29,7 +29,8 @@ Yaad is a responsive hackathon prototype for preserving a familiar voice and usi
 - **Talk in the saved voice:** subsequent questions use the same reference. A new question never replaces the voice. Ask for a poem, story, or an answer about a saved memory.
 - **Use the bottom dock:** microphone mute, start/end session, explicit text-input toggle, and new session stay above the device's bottom safe area. Starting fresh keeps saved stories, voice, and archived history.
 - **Hear replies first:** no full answer textbox appears. Optional subtitles reveal small chunks as the reply plays. Timing is estimated from audio progress, not provider word timestamps or live model-token streaming.
-- **Keep secondary features in the hamburger drawer:** unified conversation/memory history, voice naming and re-recording, privacy/data controls, reply language, subtitle preferences, and hands-free settings.
+- **Open the circular hamburger menu:** seven spring-animated, glass shortcuts open History, Voice, Privacy, Settings, Save story, Hear poem, and Guide. Labels stay visible on phones; secondary panels keep their existing controls.
+- **Keep secondary features in the hamburger menu:** unified conversation/memory history, voice naming and re-recording, privacy/data controls, reply language, subtitle preferences, and hands-free settings.
 - **Save stories intentionally:** use **Menu → Save a story**, then speak or type. These are separate from the reusable voice reference.
 
 ## Judge walkthrough
@@ -98,7 +99,7 @@ Locally, Vite forwards `/api` requests to the Python server. On Vercel, small Py
 
 | Layer | Implementation |
 | --- | --- |
-| Interface | React 19, TypeScript, Vite 7, Lucide icons |
+| Interface | React 19, TypeScript, Vite 7, Lucide icons, Framer Motion |
 | Orb | Three.js, React Three Fiber, Drei, adapted ElevenLabs UI orb |
 | Recording | Browser `getUserMedia` and `MediaRecorder` |
 | Playback and audio levels | Web Audio API and analyser nodes |
@@ -143,7 +144,11 @@ Sarvam-Yaad/
 │   ├── main.tsx             # React entry point
 │   ├── App.tsx              # Main screen, recording, requests, memories, playback
 │   ├── GuidedTour.tsx       # Guided steps, spotlight positioning, keyboard handling
-│   ├── Drawer.tsx           # History, voice, privacy, data and system settings
+│   ├── components/
+│   │   └── ui/
+│   │       ├── circle-menu.tsx  # Spring radial menu, keyboard and reduced-motion support
+│   │       └── circle-menu.css  # Silver glass theme and responsive ring layout
+│   ├── Drawer.tsx           # Menu actions, history, voice, privacy and settings panels
 │   ├── Subtitles.tsx        # Audio-clock captions and frame-pressure fallback
 │   ├── audio.ts             # Microphone-clip WAV normalization and IndexedDB storage
 │   ├── Orb.tsx              # Audio-reactive Three.js orb
@@ -181,7 +186,7 @@ Sarvam-Yaad/
 - **User flow, language choices, memory handling, or playback:** start in [`src/App.tsx`](src/App.tsx). It owns the recording/request/playback states and browser persistence.
 - **Tutorial copy and interaction:** edit [`src/GuidedTour.tsx`](src/GuidedTour.tsx), [`src/tour.css`](src/tour.css), and the corresponding `data-tour` targets in `App.tsx`.
 - **Voice recording and storage:** edit [`src/App.tsx`](src/App.tsx), [`src/Drawer.tsx`](src/Drawer.tsx), and [`src/audio.ts`](src/audio.ts). The orb starts browser recording in `App.tsx`; browser decoding normalizes the captured clip to a bounded mono 24 kHz PCM WAV before storage.
-- **Drawer navigation and secondary controls:** edit [`src/Drawer.tsx`](src/Drawer.tsx). Playback captions live in [`src/Subtitles.tsx`](src/Subtitles.tsx).
+- **Circular navigation and secondary controls:** shared UI components live under `src/components/ui`, matching the existing `src` application root. Edit [`circle-menu.tsx`](src/components/ui/circle-menu.tsx) and its CSS for radial motion and appearance; [`src/Drawer.tsx`](src/Drawer.tsx) maps the icons to real app actions. This integration uses the existing CSS theme and TypeScript setup; no Tailwind or shadcn migration is required. Playback captions live in [`src/Subtitles.tsx`](src/Subtitles.tsx).
 - **Layout or glass appearance:** edit [`src/style.css`](src/style.css). Orb rendering lives in [`src/Orb.tsx`](src/Orb.tsx).
 - **Models, prompts, and language enforcement:** edit [`server.py`](server.py). Speech generation and voice-reference validation live in [`voice.py`](voice.py). Both local development and Vercel use this implementation.
 - **Hosting settings:** edit [`vercel.json`](vercel.json). The adapters in `api/` contain no separate conversation workflow.
@@ -342,6 +347,7 @@ Before sharing a deployment, check the actual user flow:
 - Pause/replay audio; try the visible **Play reply** fallback or replay from drawer history on a phone.
 - Record a permitted reference through the orb, generate a poem, reload, and verify the same reference remains the default.
 - Confirm a missing-permission or invalid-duration reference is rejected, and a failed clone does not switch narrators.
+- Open the circle menu, tap each label, return to the ring, and check close/reopen, arrow-key navigation, and reduced-motion behavior. Confirm disabled voice-dependent actions stay disabled until a reference is saved.
 - Check small phones, landscape, tablets, and laptops: the main screen must not scroll, and the dock must remain above safe areas.
 - Open typing explicitly, then test reduced keyboard height, close, and send. Voice output must not automatically reopen the keyboard.
 - Check subtitles during playback, disable them in Settings, and verify the plain-text fallback under frame pressure.
