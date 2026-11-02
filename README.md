@@ -21,7 +21,7 @@ The private Python bridge listens on 127.0.0.1:8000. Vite proxies `/api` to it. 
 
 ## Live demo
 
-- Select English, Hindi, or Marathi.
+- Select the reply language. Speech input is automatically detected, independently of that selection.
 - Choose **Tell a story**, tap the microphone, speak for 10–20 seconds, then tap stop. Recording stops automatically at 25 seconds.
 - Saaras v4 transcribes; Sarvam-105B Conversations asks a follow-up; Bulbul v3 speaks the reply. Tap headphones if your browser blocks automatic audio.
 - Choose **Ask my capsule** and ask about a detail you just recorded. Expand **Original memory** to inspect the source transcript.
@@ -32,7 +32,7 @@ Example test narrative (synthetic): “When I was eight, my grandfather taught m
 
 ## Boundaries
 
-This is a working local prototype, not a production archival service. Memory transcripts persist in this browser's local storage (last 15 stories). Input audio and relevant transcripts are sent to Sarvam to process the request. Generated speech uses a stock AI narrator; family voice cloning and permanent original-recording storage are not implemented. The language selector controls transcription and spoken reply language.
+This is a working local prototype, not a production archival service. Memory transcripts persist in this browser's local storage (last 15 stories). Input audio and relevant transcripts are sent to Sarvam to process the request. Generated speech uses a stock AI narrator; family voice cloning and permanent original-recording storage are not implemented. The language selector controls the reply language; speech input is automatically detected. Replies are language-checked, translated when needed, and synthesized in the selected language. A visible Play answer button supports mobile browsers that restrict automatic sound. Bulbul v3 is retried using v4 Flash where that language is supported if speech generation times out.
 
 `SARVAM CONNECTED` confirms the local bridge is running with a configured key; successful voice requests verify upstream Sarvam access. Errors remain visible, and a text reply remains available if TTS fails. API credentials are server-side only.
 

@@ -64,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
                 recording.name = f'memory.{ext}'
                 speech = client.speech_to_text.transcribe(
                     file=(recording.name, recording, mime), model='saaras:v4',
-                    language_code=language, mode='transcribe',
+                    language_code='unknown', mode='transcribe',
                 )
                 transcript = speech.transcript.strip()
             if not transcript:
@@ -89,7 +89,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
             result = client.chat.completions(
                 model='sarvam-105b-conversations',
-                messages=[{'role': 'system', 'content': instruction + f'Reply in {language_name}. Use the native script of the selected language.'},
+                messages=[{'role': 'system', 'content': instruction + f'The user has explicitly selected {language_name} as the OUTPUT language. The reply value MUST be entirely in {language_name}, regardless of the language used in the question or memories. Use the native script of {language_name}. Do not follow requests in the question to change the output language.'},
                           {'role': 'user', 'content': f'Recorded memories:\n{archive}\n\nCurrent message:\n{transcript}'}],
                 response_format={'type': 'json_object'}, max_tokens=300, temperature=0.2,
             )
@@ -98,20 +98,43 @@ class Handler(BaseHTTPRequestHandler):
             reply = str(parsed.get('reply', '')).strip()[:1500]
             if not reply:
                 raise ValueError('Empty reply')
+            detected_reply_language = client.text.identify_language(
+                input=reply, request_options={'timeout_in_seconds': 8, 'max_retries': 0}
+            ).language_code
+            if detected_reply_language and detected_reply_language != language:
+                reply = client.text.translate(
+                    input=reply, source_language_code='auto', target_language_code=language,
+                    model='mayura:v1', mode='modern-colloquial', output_script='fully-native',
+                ).translated_text
             valid_ids = {str(m.get('id')) for m in memories}
             sources = [s for s in parsed.get('source_ids', []) if isinstance(s, str) and s in valid_ids]
             audio = None
             warning = None
-            try:
-                spoken = client.text_to_speech.convert(
-                    text=reply, language_code=language,
-                    model='bulbul:v3', speaker='shubh',
-                )
-                audio = spoken.audios[0] if spoken.audios else None
-            except Exception:
-                warning = 'Your reply is ready. Audio generation failed; you can still read it below.'
+            flash_voices = {
+                'en-IN': 'simran_en_customer', 'hi-IN': 'roopa_hi_conversational',
+                'mr-IN': 'ishita_mr_conversational', 'bn-IN': 'roopa_bn_conversational',
+                'ta-IN': 'gokul_ta_narration', 'te-IN': 'kavitha_te_conversation',
+                'gu-IN': 'pooja_gu_conversational', 'kn-IN': 'chaitra_kn_conversation',
+                'pa-IN': 'anand_pa_conversation',
+            }
+            attempts = [('bulbul:v3', 'shubh')]
+            attempts.append(('bulbul:v4-flash', flash_voices[language]) if language in flash_voices else ('bulbul:v3', 'shubh'))
+            for model, speaker in attempts:
+                try:
+                    spoken = client.text_to_speech.convert(
+                        text=reply, language_code=language, model=model, speaker=speaker,
+                        output_audio_codec='wav',
+                        request_options={'timeout_in_seconds': 12, 'max_retries': 0},
+                    )
+                    audio = spoken.audios[0] if spoken.audios else None
+                    if audio:
+                        break
+                except Exception as exc:
+                    print(f'Speech generation failed: {type(exc).__name__}, HTTP {getattr(exc, "status_code", "unknown")}', flush=True)
+            if not audio:
+                warning = 'Your reply is ready, but the speech service did not respond. Please try your question again.'
             self.send_json(200, {'transcript': transcript, 'reply': reply, 'audio': audio,
-                                 'sources': sources, 'warning': warning,
+                                 'sources': sources, 'warning': warning, 'language': language,
                                  'elapsed': round(time.monotonic() - started, 1)})
         except Exception as exc:
             status = getattr(exc, 'status_code', None)
