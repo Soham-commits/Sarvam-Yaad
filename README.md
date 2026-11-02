@@ -1,6 +1,6 @@
 # Yaad — Sarvam voice time capsule
 
-Single-screen mobile app with a silver ElevenLabs orb reacting to real microphone input and Sarvam audio playback.
+Single-screen responsive app for phones, tablets, laptops, and landscape displays, with a silver ElevenLabs orb reacting to real microphone input and Sarvam audio playback.
 
 ## Live app
 
