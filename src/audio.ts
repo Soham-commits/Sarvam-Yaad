@@ -10,16 +10,17 @@ export function blobToBase64(blob: Blob): Promise<string> {
 }
 
 // A short mono WAV keeps inline reference uploads small and format-independent.
-export async function prepareReference(file: File): Promise<{ audio: string; duration: number }> {
-  if (file.size > 20_000_000) throw new Error('Choose an audio file smaller than 20 MB.');
+export async function prepareReference(file: Blob): Promise<{ audio: string; duration: number }> {
+  if (file.size > 20_000_000) throw new Error('This recording is too large. Please record a shorter clip.');
   const context = new AudioContext();
   try {
     const decoded = await context.decodeAudioData(await file.arrayBuffer());
-    if (decoded.duration < 5 || decoded.duration > 15) throw new Error('Choose a clip between 5 and 15 seconds. 10–15 seconds works best.');
+    if (decoded.duration < 5 || decoded.duration > 15) throw new Error('Speak for at least 5 seconds, then tap the orb again. Aim for 10–12 seconds.');
     const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * 24000), 24000);
     const source = offline.createBufferSource(); source.buffer = decoded; source.connect(offline.destination); source.start();
     const rendered = await offline.startRendering();
     const samples = rendered.getChannelData(0);
+    if (Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length) < .002) throw new Error('This recording is too quiet. Move closer to the microphone and try again.');
     const buffer = new ArrayBuffer(44 + samples.length * 2); const view = new DataView(buffer);
     const write = (offset: number, value: string) => [...value].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
     write(0, 'RIFF'); view.setUint32(4, buffer.byteLength - 8, true); write(8, 'WAVE'); write(12, 'fmt ');
