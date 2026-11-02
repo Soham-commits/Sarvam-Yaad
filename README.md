@@ -2,7 +2,7 @@
 
 Tell a memory in your own language. Ask about it later. Hear the reply in the language you choose.
 
-Yaad is a responsive hackathon prototype for preserving a familiar voice and using it to speak new stories, poems, and conversational replies. It combines Sarvam speech recognition, conversational AI, language identification, translation, and speech synthesis across dedicated Memories and Conversation pages, with an audio-reactive silver orb and a guided first-visit tutorial.
+Yaad is a responsive hackathon prototype for preserving a familiar voice and using it to speak new stories, poems, and conversational replies. It combines Sarvam speech recognition, conversational AI, language identification, translation, and speech synthesis in one full-screen orb experience, with an audio-reactive silver orb and a guided first-visit tutorial.
 
 **[Open Yaad](https://yaad-ui.vercel.app/) · [Open the judge walkthrough](https://yaad-ui.vercel.app/?tour=1)**
 
@@ -24,36 +24,40 @@ Yaad is a responsive hackathon prototype for preserving a familiar voice and usi
 
 ## What you can do
 
-- **Preserve a voice directly:** open Memories, confirm permission, and tap the silver orb. Speak clearly for 10–12 seconds; tap it again to save, or let it stop automatically. No file upload is needed.
-- **Generate new content in that voice:** after saving, Yaad opens Conversation. Choose **Hear Twinkle, Twinkle**, type a request, or tap the orb to start hands-free conversation. Every reply uses the saved reference; incoming questions never replace it.
-- **Choose a reply language:** input speech is detected automatically; the language selector controls generated text and speech across 11 supported languages.
-- **Save stories separately:** choose **••• → Save a story**. Browse, delete, or ask about them from **••• → Saved stories**. These details stay off the main screen until opened.
-- **Manage the saved voice:** **••• → Saved voice** lets you rename it, record a replacement, or remove it from this browser.
-- **Use a focused interface:** the orb is the recording control. Replies show only the answer initially; request text and sources are behind **Details**. The interface adapts to phone, tablet, and laptop screens, with glass controls and smooth transitions.
+- **One orb, one screen:** preserve a voice, ask a question, or hear new content without switching between memory and conversation tabs. The main viewport does not scroll.
+- **Preserve a voice directly:** tap the orb, confirm permission, then speak clearly for 10–12 seconds. Tap again to save, or let recording finish automatically. No upload is needed.
+- **Talk in the saved voice:** subsequent questions use the same reference. A new question never replaces the voice. Ask for a poem, story, or an answer about a saved memory.
+- **Use the bottom dock:** microphone mute, start/end session, explicit text-input toggle, and new session stay above the device's bottom safe area. Starting fresh keeps saved stories, voice, and archived history.
+- **Hear replies first:** no full answer textbox appears. Optional subtitles reveal small chunks as the reply plays. Timing is estimated from audio progress, not provider word timestamps or live model-token streaming.
+- **Keep secondary features in the hamburger drawer:** unified conversation/memory history, voice naming and re-recording, privacy/data controls, reply language, subtitle preferences, and hands-free settings.
+- **Save stories intentionally:** use **Menu → Save a story**, then speak or type. These are separate from the reusable voice reference.
 
 ## Judge walkthrough
 
-Open **[the guided link](https://yaad-ui.vercel.app/?tour=1)**. The short first-visit guide explains the orb-based flow. Replay it from **••• → Quick guide**.
+Open **[Yaad](https://yaad-ui.vercel.app/)**, or use **[the guided link](https://yaad-ui.vercel.app/?tour=1)** to show the short three-step tutorial. Replay it from **Menu → Quick guide**.
 
 | Step | Action | Expected behavior |
 | --- | --- | --- |
-| 1 | Open **Memories**, then confirm permission to use the voice. | The page shows one recording orb; there is no file picker. |
-| 2 | Tap the orb and speak naturally for 10–12 seconds. | The orb reacts to the microphone. Tap again to save; otherwise recording ends at 12 seconds. Clips shorter than 5 seconds or too quiet are rejected. |
-| 3 | Wait for the transition to **Conversation**. | A local reference has been saved and is now the default for generated speech. Recording the reference itself does not call Sarvam. |
-| 4 | Choose **Hear Twinkle, Twinkle**. | Sarvam generates the public-domain first stanza using the saved voice reference. This is new speech, not playback of the recording. |
-| 5 | Tap headphones to replay, or tap the orb and request a different story. | A new request changes the content, while the saved reference stays the same. |
-| 6 | Change the reply language and repeat a request. | Text and synthesized speech use the selected output language. |
-| 7 | Reload the same browser and origin. | The voice reference remains available. |
+| 1 | Tap the central orb. | The voice-permission prompt appears when no reference is saved. |
+| 2 | Confirm permission and choose **Record with the orb**. Speak naturally for 10–12 seconds. | The orb reacts to the microphone. Tap again to save, or let the 12-second limit stop recording. Short or very quiet clips are rejected. |
+| 3 | Tap the same orb and request “Recite Twinkle, Twinkle, Little Star.” | Sarvam generates new speech using the saved reference. The original recording is not simply replayed. |
+| 4 | Alternatively, choose **Menu → Hear Twinkle, Twinkle**. | The complete public-domain first stanza is spoken in the selected language and saved voice. |
+| 5 | Watch the optional subtitles while the reply plays. | Small chunks follow audio progress. No keyboard or complete answer card opens automatically. |
+| 6 | Use mute/unmute and end-session controls in the bottom dock. | Microphone input can pause without replacing the voice reference; ending stops the current interaction. |
+| 7 | Open **Menu → System settings** and change the reply language or subtitle preference. | The preference applies to subsequent replies and is retained in this browser. |
+| 8 | Reload the same browser and origin. | Voice, saved stories, settings, and the last 40 conversation messages remain available. |
 
-Use your own voice or a voice you have permission and rights to clone. Cloning approximates a voice; it does not guarantee an identical reproduction or recreate the person's thoughts.
+Use your own voice or one you have permission and rights to clone. Cloning approximates a voice; it does not guarantee an identical reproduction or recreate the person's thoughts.
 
-To test memory questions, choose **••• → Save a story** and submit this synthetic example:
+To test memory questions, choose **Menu → Save a story** and submit this synthetic example:
 
 > When I was eight, my grandfather taught me to ride a bicycle in Pune. We celebrated with mango ice cream.
 
-Then visit Conversation and ask who taught you, where it happened, and what your grandfather's first salary was. Supported personal answers should reference the recorded story; an absent detail should be acknowledged as missing. Expand **Details** to inspect the supplied sources. These are expected behaviors to verify, not a guarantee of model accuracy.
+Then ask the orb who taught you, where it happened, and what your grandfather's first salary was. Answers should use saved context and acknowledge absent details. Read the conversation and original stories inside **Menu → Conversation & memory history**. These are expected behaviors to verify, not a guarantee of model accuracy.
 
-On Conversation, the orb starts a hands-free session. A turn is sent after about 1.8 seconds of silence, then listening resumes after the reply. Each question is capped at 25 seconds. No detected speech ends listening after about 12 seconds; noisy rooms may require the keyboard alternative. Tap the orb again to end the session. During standalone playback, tapping the orb pauses the reply.
+With hands-free enabled, a turn is sent after about 1.8 seconds of silence, then listening resumes after the reply. Each question is capped at 25 active recording seconds. No detected speech ends listening after about 12 seconds. With hands-free disabled, tap the orb to submit a recording. The keyboard opens only when explicitly requested and closes when a voice request starts.
+
+The app follows the visual viewport when a mobile keyboard opens. Long secondary lists can scroll inside the drawer; the main orb screen and page remain fixed. Phone-sized browser checks do not replace physical iOS Safari and Android Chrome testing.
 
 ## Architecture
 
@@ -80,11 +84,13 @@ flowchart TD
     R --> W[Web Audio playback and orb animation]
 ```
 
-The frontend sends the current message, selected output language, mode, saved transcript context, and the saved voice reference to the backend. Conversation also sends up to eight recent user/assistant messages; these turns live in page memory, not durable storage. In **record** mode, the model acknowledges the story and asks one follow-up. In legacy **ask** mode, instructions restrict answers to supplied memories. The new **chat** mode supports general conversation while requiring supplied memories or prior turns for personal claims and requesting supporting memory IDs. **speak** is used for voice previews; it skips chat generation.
+The frontend sends the current message, selected output language, mode, saved transcript context, and the saved voice reference to the backend. Each active conversation sends up to eight recent user/assistant messages. Separately, the last 40 conversation messages are archived in browser localStorage; a new session clears active context without erasing that archive. In **record** mode, the model acknowledges the story and asks one follow-up. In legacy **ask** mode, instructions restrict answers to supplied memories. The new **chat** mode supports general conversation while requiring supplied memories or prior turns for personal claims and requesting supporting memory IDs. **speak** is used for voice previews; it skips chat generation.
 
 The backend checks that returned source IDs exist in the supplied archive. This is an ID check, not an independent verification that every claim is supported. The model can still make mistakes.
 
 Generated replies are language-checked and translated when the detected language differs from the selection. Without a selected clone, speech synthesis first uses Bulbul v3, with a second attempt using Bulbul v4 Flash for configured languages or another v3 attempt otherwise. With a selected clone, the backend uses Sarvam instant voice cloning with the inline reference. It does not create a shared saved voice in the provider workspace. If synthesis fails, the text reply is still returned with a warning.
+
+Subtitles receive the complete reply and decoded audio duration, then estimate word/chunk progression from the Web Audio playback clock. Under sustained frame pressure (below roughly 58 FPS over two measurement windows), they drop the glass card and blur for plain floating text. This is a lightweight fallback, not a 60 FPS performance guarantee. Reduced-motion preferences disable token animations.
 
 Locally, Vite forwards `/api` requests to the Python server. On Vercel, small Python function adapters reuse the same handler beside the static frontend.
 
@@ -137,7 +143,8 @@ Sarvam-Yaad/
 │   ├── main.tsx             # React entry point
 │   ├── App.tsx              # Main screen, recording, requests, memories, playback
 │   ├── GuidedTour.tsx       # Guided steps, spotlight positioning, keyboard handling
-│   ├── VoicePanel.tsx       # Saved-voice naming, re-recording action and removal
+│   ├── Drawer.tsx           # History, voice, privacy, data and system settings
+│   ├── Subtitles.tsx        # Audio-clock captions and frame-pressure fallback
 │   ├── audio.ts             # Microphone-clip WAV normalization and IndexedDB storage
 │   ├── Orb.tsx              # Audio-reactive Three.js orb
 │   ├── style.css            # App layout, glass styling, responsive rules
@@ -173,7 +180,8 @@ Sarvam-Yaad/
 
 - **User flow, language choices, memory handling, or playback:** start in [`src/App.tsx`](src/App.tsx). It owns the recording/request/playback states and browser persistence.
 - **Tutorial copy and interaction:** edit [`src/GuidedTour.tsx`](src/GuidedTour.tsx), [`src/tour.css`](src/tour.css), and the corresponding `data-tour` targets in `App.tsx`.
-- **Voice recording and storage:** edit [`src/VoicePanel.tsx`](src/VoicePanel.tsx) and [`src/audio.ts`](src/audio.ts). The orb starts browser recording in `App.tsx`; browser decoding normalizes the captured clip to a bounded mono 24 kHz PCM WAV before storage.
+- **Voice recording and storage:** edit [`src/App.tsx`](src/App.tsx), [`src/Drawer.tsx`](src/Drawer.tsx), and [`src/audio.ts`](src/audio.ts). The orb starts browser recording in `App.tsx`; browser decoding normalizes the captured clip to a bounded mono 24 kHz PCM WAV before storage.
+- **Drawer navigation and secondary controls:** edit [`src/Drawer.tsx`](src/Drawer.tsx). Playback captions live in [`src/Subtitles.tsx`](src/Subtitles.tsx).
 - **Layout or glass appearance:** edit [`src/style.css`](src/style.css). Orb rendering lives in [`src/Orb.tsx`](src/Orb.tsx).
 - **Models, prompts, and language enforcement:** edit [`server.py`](server.py). Speech generation and voice-reference validation live in [`voice.py`](voice.py). Both local development and Vercel use this implementation.
 - **Hosting settings:** edit [`vercel.json`](vercel.json). The adapters in `api/` contain no separate conversation workflow.
@@ -298,6 +306,8 @@ Successful responses contain:
 | `language` | Output-language code |
 | `elapsed` | Backend processing time in seconds |
 
+The old `/memories` and `/conversation` URLs still load the unified app and normalize to `/`; there are no separate page tabs.
+
 The frontend alone persists new stories; posting `record` directly to the API does not save anything on a server. Replies are bounded to 1,000 characters for clone compatibility. Recognized English requests to recite Twinkle, Twinkle use the original first stanza directly, then follow the same language and speech pipeline. Other content requests use the conversational model.
 
 The handler limits incoming request bodies to 12,000,000 bytes; the browser caps voice-reference capture at 12 seconds and message recording at 25 seconds. Hosting-platform limits can be lower. Empty input and unrecognized speech have error responses; upstream failures generally return HTTP `502` with an `error` message. Speech-synthesis failure alone can return HTTP `200` with text and a warning, so clients should inspect both `audio` and `warning`.
@@ -314,7 +324,7 @@ The app is configured for Vercel:
 
 [`vercel.json`](vercel.json) configures the Python functions with a 60-second maximum duration. The full voice pipeline makes several upstream calls, so processing time depends on Sarvam and platform limits; no latency guarantee is made.
 
-The existing live project is connected to GitHub `main` for production deployments. The local Python process is not needed by the deployed site. For a new deployment, browser memories start empty because storage is scoped to the site's origin.
+The existing live project is connected to GitHub `main` for production deployments. The local Python process is not needed by the deployed site. For a new deployment on a different origin, browser memories start empty because storage is scoped to the site's origin.
 
 ## Verification and troubleshooting
 
@@ -322,36 +332,38 @@ The existing live project is connected to GitHub `main` for production deploymen
 
 Before sharing a deployment, check the actual user flow:
 
-- Open `?tour=1`; verify the four short guide steps and their highlighted controls.
-- Confirm permission, record through the orb, and verify automatic navigation to Conversation.
-- From the more menu, save a typed story; confirm a reply and persistence after reload.
+- Open `?tour=1`; verify the three short guide steps and their highlighted controls.
+- Confirm permission, record through the orb, and verify the saved voice is ready on the same screen.
+- From the hamburger menu, save a typed story; confirm a reply and persistence after reload.
 - Record a story; verify the transcript, audio playback, and orb response.
-- Ask a question with a known answer and inspect **Original memory**.
+- Ask a question with a known answer and inspect the original story in drawer history.
 - Ask for an absent detail; confirm the reply acknowledges the gap.
 - Change output language while keeping input in another language; check text **and** speech.
-- Pause/replay audio; try the visible **Play answer** control on a phone.
+- Pause/replay audio; try the visible **Play reply** fallback or replay from drawer history on a phone.
 - Record a permitted reference through the orb, generate a poem, reload, and verify the same reference remains the default.
 - Confirm a missing-permission or invalid-duration reference is rejected, and a failed clone does not switch narrators.
-- Check narrow phone, tablet, and laptop layouts; confirm controls remain usable.
-- Clear test memories from the more menu after testing.
+- Check small phones, landscape, tablets, and laptops: the main screen must not scroll, and the dock must remain above safe areas.
+- Open typing explicitly, then test reduced keyboard height, close, and send. Voice output must not automatically reopen the keyboard.
+- Check subtitles during playback, disable them in Settings, and verify the plain-text fallback under frame pressure.
+- Clear test memories from the hamburger menu after testing.
 
 ### Common issues
 
 | Symptom | What to check |
 | --- | --- |
 | Microphone does not open | Use HTTPS or localhost, allow browser/OS microphone access, and check recording support. Use the typed alternative if needed. |
-| Reply text appears without sound | Tap **Play answer**, check device volume/output, and inspect any speech-service warning. Browser autoplay restrictions may require a tap. |
+| Reply text appears without sound | Tap **Play reply** or use **Menu → History → Replay latest reply**, check device volume/output, and inspect any speech-service warning. Browser autoplay restrictions may require a tap. |
 | No reply or an API error | Check backend availability, Sarvam model access (including instant voice cloning when selected), credits, and server-side key configuration. A successful health response alone is insufficient. |
 | Local `/api` calls fail | Keep the Python server running on port 8000 and use the Vite development server on port 5173. Static preview does not include the dev proxy. |
 | Memories are missing on another device or URL | Transcripts belong to the current browser and origin. Localhost, the deployed domain, private browsing, and other devices have separate storage. |
-| Tutorial no longer opens automatically | Use `?tour=1` or **••• → Quick guide**. The current first-visit marker is `yaad-guided-tour-v3`. |
+| Tutorial no longer opens automatically | Use `?tour=1` or **Menu → Quick guide**. The current first-visit marker is `yaad-guided-tour-v4`. |
 | A reply takes too long | Retry with a shorter recording or typed input. The browser waits up to 120 seconds, but deployment function limits may expire sooner. |
 
 ## Data handling and limitations
 
-- **Browser persistence:** `yaad-memories` holds up to 15 story transcripts in `localStorage`. Clearing site data or using another browser can remove or separate access to them. There is no backup or synchronization service.
+- **Browser persistence:** `yaad-history-v1` holds the last 40 conversation messages; `yaad-memories` holds up to 15 story transcripts in `localStorage`. Clearing site data or using another browser can remove or separate access to them. There is no backup or synchronization service.
 - **External processing:** audio, current text, recent conversation, any selected voice reference, and supplied memory context are sent through the backend to Sarvam as needed to fulfill the request. Browser-local storage does not mean processing happens entirely on-device.
-- **Audio scope:** original story recordings are not durably archived. Generated replies are held temporarily in the page and can be downloaded. A deliberately recorded voice reference is stored separately in browser IndexedDB (`yaad-voices`); remove it from **••• → Saved voice** to delete that local copy.
+- **Audio scope:** original story recordings are not durably archived. Generated replies are held temporarily in the page and can be downloaded. A deliberately recorded voice reference is stored separately in browser IndexedDB (`yaad-voices`); remove it from **Menu → Account, privacy & data** to delete that local copy.
 - **Narrator identity:** record a voice you have permission and rights to use; the app uses that saved recording for all generated replies. Cloning generates new speech with a similar sound; it does not recover that person's thoughts or memories, and the conversational model is instructed not to impersonate them. The reference is sent inline to Sarvam when used. Deleting it locally does not control provider-side request retention; consult provider terms.
 - **Answer reliability:** prompt instructions and source-ID filtering support grounded answers but cannot eliminate incorrect statements. Transcription and language identification can also be wrong.
 - **Public-demo scope:** there are no application accounts, server-side user archives, access controls, or app-level rate limiting. Public requests use the deployment owner's Sarvam account and credits. Add these controls before broader production use.

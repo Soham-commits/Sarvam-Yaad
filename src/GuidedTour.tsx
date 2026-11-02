@@ -1,14 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, BookOpen, Headphones, Mic, MessageCircle, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Headphones, Mic, MessageCircle, X } from 'lucide-react';
 import './tour.css';
 
-export const TOUR_KEY = 'yaad-guided-tour-v3';
+export const TOUR_KEY = 'yaad-guided-tour-v4';
 
 const steps = [
-  { target: null, icon: MessageCircle, label: 'WELCOME TO YAAD', title: 'Record once.\nHear something new.', text: 'Keep a voice, then ask for a poem, a story, or a conversation in that same voice.', hint: 'Three small steps. No uploads.' },
-  { target: 'record-mode', icon: BookOpen, label: 'FIRST, KEEP A VOICE', title: 'Start on Memories.', text: 'Confirm you have permission to use the voice. No files or setup forms are needed.', hint: 'Your saved recording stays in this browser.' },
-  { target: 'record', icon: Mic, label: 'THE ORB IS THE BUTTON', title: 'Tap it. Speak. Keep it.', text: 'After closing the guide, tap the orb and speak clearly for 10–12 seconds. Tap again to save, or let recording finish automatically.', hint: 'The orb moves with your voice. Speak for at least 5 seconds.' },
-  { target: 'ask-mode', icon: Headphones, label: 'THEN, GIVE IT NEW WORDS', title: 'Make it say something new.', text: 'Conversation uses your saved voice. Tap “Hear Twinkle, Twinkle”, or tap the orb and ask for something else.', hint: 'New questions never replace the saved voice. Output is AI-generated.' },
+  { target: null, icon: MessageCircle, label: 'WELCOME TO YAAD', title: 'One orb.\nYour voice.', text: 'Keep a voice once, then have a conversation or hear something new in that same voice.', hint: 'Your voice stays in this browser. New questions never replace it.' },
+  { target: 'record', icon: Mic, label: 'TAP THE ORB', title: 'Record, then talk.', text: 'Tap the orb to preserve a voice. Confirm permission, then speak for 10–12 seconds. Once saved, the same orb starts a conversation.', hint: 'The orb reacts when you speak and when it replies.' },
+  { target: 'dock', icon: Headphones, label: 'ALWAYS WITHIN REACH', title: 'Controls stay at the bottom.', text: 'Mute, end a session, type a message, or start fresh from the dock. History, voice settings, language, and privacy live in the hamburger menu.', hint: 'Replies are spoken. Optional subtitles follow audio playback.' },
 ];
 
 type Rect = { left: number; top: number; width: number; height: number };
@@ -23,8 +22,8 @@ export function GuidedTour({ step, mode, layoutKey, onStep, onClose }: Props) {
   const [panelSize, setPanelSize] = useState({width: 360, height: 330});
   const [viewport, setViewport] = useState({width: innerWidth, height: innerHeight, top: 0});
   const previousFocus = useRef<HTMLElement | null>(null);
-  const isRecording = step === 2 && mode === 'listening';
-  const isProcessing = step === 2 && (mode === 'thinking' || mode === 'connecting');
+  const isRecording = step === 1 && mode === 'listening';
+  const isProcessing = step === 1 && (mode === 'thinking' || mode === 'connecting');
 
   useEffect(() => {
     previousFocus.current = document.activeElement as HTMLElement;
