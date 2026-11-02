@@ -19,6 +19,10 @@ Hosted frontend and Python API run together over HTTPS. Set `SARVAM_API_KEY` as 
 
 The private Python bridge listens on 127.0.0.1:8000. Vite proxies `/api` to it. Keep both terminals running. Physical phones require an HTTPS URL for microphone access; ordinary HTTP LAN access does not permit recording. The laptop browser can show the phone layout at localhost.
 
+## Judge tutorial
+
+Share https://yaad-ui.vercel.app/?tour=1 to open the walkthrough explicitly. Normal first visits also open it automatically. Completion or dismissal is remembered per browser, without changing saved memories. Replay from the ••• menu → Take a guided tour. The guide highlights real controls, advances on language/mode choices, follows an actual recording through processing, and offers a labelled sample that is not saved until the visitor presses Send. It supports Back, Skip/Close, Escape, keyboard focus, small screens, and reduced-motion preferences.
+
 ## Live demo
 
 - Select the reply language. Speech input is automatically detected, independently of that selection.

@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { ArrowDownToLine, AudioLines, Check, ChevronDown, Ellipsis, Headphones, Mic, Pause, Keyboard, ShieldCheck, Square, X } from 'lucide-react';
 import { Orb } from './Orb';
+import { GuidedTour, SAMPLE_MEMORY, TOUR_KEY } from './GuidedTour';
 
 type Mode = 'idle' | 'connecting' | 'listening' | 'ready' | 'talking' | 'thinking';
 type Memory = {id:string; text:string};
@@ -18,6 +19,26 @@ export default function App() {
   const [showText, setShowText] = useState(false);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const [hasReplyAudio, setHasReplyAudio] = useState(false);
+  const [tourStep, setTourStep] = useState<number | null>(() => {
+    if (new URLSearchParams(location.search).get('tour') === '1') return 0;
+    try { return localStorage.getItem(TOUR_KEY) ? null : 0; } catch { return 0; }
+  });
+  const tourRecorded = useRef(false);
+  function finishTour() {
+    try { localStorage.setItem(TOUR_KEY, 'seen'); } catch { /* Session-only tour if storage is unavailable. */ }
+    const url = new URL(location.href); url.searchParams.delete('tour'); history.replaceState(null,'',url);
+    setTourStep(null); setMenu(null);
+  }
+  function moveTour(next: number) {
+    setMenu(null);
+    if (next === 3) { setTask('record'); tourRecorded.current = false; }
+    setTourStep(next);
+  }
+  function tryExample() {
+    stopReply(); audio.current?.pause(); stopMeter(); setHasReplyAudio(false); setMode('idle');
+    finishTour(); setTask('record'); setAnswer(null); setShowText(true); setTyped(SAMPLE_MEMORY);
+    requestAnimationFrame(() => document.querySelector<HTMLInputElement>('[aria-label="Type a memory or question"]')?.focus());
+  }
   const [memories, setMemories] = useState<Memory[]>(() => {
     try { const saved = JSON.parse(localStorage.getItem('yaad-memories') || '[]'); return Array.isArray(saved) ? saved.filter(m => typeof m.id === 'string' && typeof m.text === 'string').slice(-15) : []; } catch { return []; }
   });
@@ -38,6 +59,11 @@ export default function App() {
   const upload = useRef<HTMLInputElement | null>(null);
   const currentUrl = useRef('');
   const busy = mode === 'thinking' || mode === 'connecting';
+  useEffect(() => {
+    if (tourStep === 3 && tourRecorded.current && task === 'record' && answer && (mode === 'ready' || mode === 'talking')) {
+      tourRecorded.current = false; setTourStep(4);
+    }
+  }, [tourStep,task,answer,mode]);
   useEffect(() => { try { localStorage.setItem('yaad-memories', JSON.stringify(memories)); } catch { setError('Browser storage is full. Keep this tab open to retain your memories.'); } }, [memories]);
   async function converse(blob?: Blob, text?: string) {
     stopReply(); setPlaybackBlocked(false); setHasReplyAudio(false);
@@ -133,6 +159,7 @@ export default function App() {
         else { setMode(currentUrl.current ? 'ready' : 'idle'); setError('No audio was captured. Try recording again.'); }
       };
       recorder.current = r; setSeconds(0); r.start(250); setMode('listening');
+      if (tourStep === 3) tourRecorded.current = true;
     } catch (e) {
       stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; stopMeter();
       setMode(currentUrl.current ? 'ready' : 'idle');
@@ -168,40 +195,40 @@ export default function App() {
   const subtitle = mode === 'thinking' ? 'Sarvam is listening, remembering, and replying.' : mode === 'listening' ? 'Tell a short story. Up to 25 seconds.' : mode === 'talking' ? 'Sarvam’s spoken reply · AI narrator' : task === 'ask' ? 'Ask a question about the stories you’ve saved.' : 'A little space for the stories that stay.';
   const clock = `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
-  return <main className={`phone-shell ${answer ? 'has-answer' : ''} ${showText ? 'has-text' : ''}`}>
+  return <><main data-tour-step={tourStep ?? undefined} className={`phone-shell ${answer ? 'has-answer' : ''} ${showText ? 'has-text' : ''} ${tourStep !== null ? 'tour-running' : ''}`}>
     <header className="appbar">
       <a className="brand" href="#" onClick={e => e.preventDefault()} aria-label="Yaad home"><span className="brand-symbol"><AudioLines size={17} strokeWidth={1.7}/></span>yaad<span className="brand-period">.</span></a>
       <div className="header-actions">
-        <div className="popover-anchor"><button className="language glass-small" disabled={busy || mode === 'listening'} onClick={() => setMenu(menu === 'language' ? null : 'language')} aria-expanded={menu === 'language'}>{language}<ChevronDown size={12}/></button>
-          {menu === 'language' && <div className="popover language-menu">{LANGUAGES.map(l => <button key={l.code} onClick={() => { setLanguage(l.name); setMenu(null); }}>{l.name}{l.name === language && <Check size={14}/>}</button>)}<p>Speak and hear replies in your language</p></div>}
+        <div className="popover-anchor" data-tour="language"><button className="language glass-small" disabled={busy || mode === 'listening'} onClick={() => setMenu(menu === 'language' ? null : 'language')} aria-expanded={menu === 'language'}>{language}<ChevronDown size={12}/></button>
+          {menu === 'language' && <div className="popover language-menu">{LANGUAGES.map(l => <button key={l.code} onClick={() => { setLanguage(l.name); setMenu(null); if(tourStep === 1) setTourStep(2); }}>{l.name}{l.name === language && <Check size={14}/>}</button>)}<p>Speak and hear replies in your language</p></div>}
         </div>
         <div className="popover-anchor"><button className="icon-button more" aria-label="More options" aria-expanded={menu === 'more'} onClick={() => setMenu(menu === 'more' ? null : 'more')}><Ellipsis size={21}/></button>
-          {menu === 'more' && <div className="popover about-menu"><strong>Your voice, your space.</strong><p>Speech is sent to Sarvam for transcription and replies. Saved transcripts stay in this browser. Spoken replies use an AI narrator, not a cloned family voice.</p><button onClick={() => {setShowText(v => !v);setMenu(null);}}>Type instead</button>{memories.length > 0 && <button onClick={() => { if(window.confirm('Delete saved memory transcripts from this browser?')) {setMemories([]);setAnswer(null);setMenu(null);} }}>Clear {memories.length} saved memories</button>}{audioUrl && <a href={audioUrl} download={`yaad-reply.${format}`}><ArrowDownToLine size={14}/>Download audio</a>}</div>}
+          {menu === 'more' && <div className="popover about-menu"><strong>Your voice, your space.</strong><p>Speech is sent to Sarvam for transcription and replies. Saved transcripts stay in this browser. Spoken replies use an AI narrator, not a cloned family voice.</p><button disabled={busy || mode === 'listening'} onClick={() => {stopReply();audio.current?.pause();stopMeter();if(mode === 'talking') setMode('ready');setMenu(null);tourRecorded.current=false;setTourStep(0);}}>Take a guided tour</button><button onClick={() => {setShowText(v => !v);setMenu(null);}}>Type instead</button>{memories.length > 0 && <button onClick={() => { if(window.confirm('Delete saved memory transcripts from this browser?')) {setMemories([]);setAnswer(null);setMenu(null);} }}>Clear {memories.length} saved memories</button>}{audioUrl && <a href={audioUrl} download={`yaad-reply.${format}`}><ArrowDownToLine size={14}/>Download audio</a>}</div>}
         </div>
       </div>
     </header>
     <section className="experience">
-      <div className="intro"><h1>{title}</h1><p>{subtitle}</p><div className="task-switch"><button disabled={busy || mode === 'listening'} aria-pressed={task === 'record'} onClick={() => {setTask('record');setAnswer(null);}}>Tell a story</button><button disabled={busy || mode === 'listening'} aria-pressed={task === 'ask'} onClick={() => {setTask('ask');setAnswer(null);}}>Ask my capsule</button></div></div>
+      <div className="intro"><h1>{title}</h1><p>{subtitle}</p><div className="task-switch"><button data-tour="record-mode" disabled={busy || mode === 'listening'} aria-pressed={task === 'record'} onClick={() => {setTask('record');setAnswer(null);if(tourStep === 2) moveTour(3);}}>Tell a story</button><button data-tour="ask-mode" disabled={busy || mode === 'listening'} aria-pressed={task === 'ask'} onClick={() => {setTask('ask');setAnswer(null);if(tourStep === 5) setTourStep(6);}}>Ask my capsule</button></div></div>
       <div className={`orb-stage ${active ? 'is-active' : ''}`} aria-label={mode === 'listening' ? 'Orb reacting to your microphone' : mode === 'talking' ? 'Orb reacting to audio playback' : 'Animated silver voice orb'}>
         <div className="orb-aura"/>
         <Suspense fallback={<div className="orb-loading"/>}><Orb className="orb-canvas" colors={['#eef0f3', '#bac2cc']} seed={73} agentState={mode === 'thinking' ? 'thinking' : mode === 'listening' ? 'listening' : mode === 'talking' ? 'talking' : null} volumeMode={mode === 'thinking' ? 'auto' : 'manual'} inputVolumeRef={inputLevel} outputVolumeRef={outputLevel}/></Suspense>
         <div className="orb-shadow"/>
       </div>
       <div className="orb-caption" aria-live="polite"><span className={`state-dot ${active || mode === 'thinking' ? 'active' : ''}`}/>{mode === 'thinking' ? 'Working with Sarvam…' : mode === 'listening' ? `Listening · ${clock}` : mode === 'talking' ? 'Speaking with Sarvam' : mode === 'connecting' ? 'Connecting your microphone' : mode === 'ready' ? 'Reply ready to replay' : 'Ready when you are'}</div>
-      {answer ? <div className="answer-card" aria-live="polite"><span className="prompt-label">{task === 'record' ? 'MEMORY SAVED' : 'FROM YOUR CAPSULE'} · {answer.elapsed}s</span><p className="heard">You: {answer.transcript}</p><p>{answer.reply}</p>{hasReplyAudio && <button className="play-answer" onClick={() => void play()}>{mode === 'talking' ? <Pause size={14}/> : <Headphones size={14}/>} {mode === 'talking' ? 'Pause answer' : `Play answer · ${LANGUAGES.find(l => l.code === answer.language)?.name || language}`}</button>}{playbackBlocked && <p className="heard">Tap Play answer to enable sound on your phone.</p>}{answer.sources.map(id => <details key={id}><summary>Original memory</summary><p>{memories.find(m => m.id === id)?.text}</p></details>)}</div> : <div className="prompt-area"><span className="prompt-label">{task === 'ask' ? `${memories.length} MEMORIES TO EXPLORE` : 'A PLACE TO BEGIN'}</span><p>{task === 'ask' ? '“What did I tell you about my childhood?”' : '“What’s a small memory that still makes you smile?”'}</p></div>}
+      {answer ? <div className="answer-card" data-tour="evidence" aria-live="polite"><span className="prompt-label">{task === 'record' ? 'MEMORY SAVED' : 'FROM YOUR CAPSULE'} · {answer.elapsed}s</span><p className="heard">You: {answer.transcript}</p><p>{answer.reply}</p>{hasReplyAudio && <button className="play-answer" onClick={() => void play()}>{mode === 'talking' ? <Pause size={14}/> : <Headphones size={14}/>} {mode === 'talking' ? 'Pause answer' : `Play answer · ${LANGUAGES.find(l => l.code === answer.language)?.name || language}`}</button>}{playbackBlocked && <p className="heard">Tap Play answer to enable sound on your phone.</p>}{answer.sources.map(id => <details key={id}><summary>Original memory</summary><p>{memories.find(m => m.id === id)?.text}</p></details>)}</div> : <div className="prompt-area" data-tour="evidence"><span className="prompt-label">{task === 'ask' ? `${memories.length} MEMORIES TO EXPLORE` : 'A PLACE TO BEGIN'}</span><p>{task === 'ask' ? '“What did I tell you about my childhood?”' : '“What’s a small memory that still makes you smile?”'}</p></div>}
       {showText && <form className="text-entry" onSubmit={e => {e.preventDefault();if(typed.trim() && !busy) void converse(undefined,typed.trim());}}><input aria-label="Type a memory or question" value={typed} onChange={e => setTyped(e.target.value)} placeholder={task === 'ask' ? 'Ask about a saved memory…' : 'Tell a short memory…'} disabled={busy}/><button disabled={busy || !typed.trim()}>Send</button></form>}
     </section>
     <footer className="bottom-area">
       {error && <div role="alert" className="error"><span>{error}</span><button aria-label="Dismiss message" onClick={() => setError('')}><X size={15}/></button></div>}
       <div className="control-dock">
         <button className="secondary-control" aria-label="Type instead" disabled={mode === 'listening' || busy} onClick={() => setShowText(v => !v)}><Keyboard size={23} strokeWidth={1.5}/></button>
-        <button className={`record-control ${mode === 'listening' ? 'recording' : ''}`} disabled={busy} onClick={() => void record()} aria-label={mode === 'listening' ? 'Finish recording' : 'Start recording'}>{mode === 'listening' ? <Square size={17} fill="currentColor"/> : <Mic size={23} strokeWidth={1.7}/>}</button>
-        <button className="secondary-control" aria-label={mode === 'talking' ? 'Pause reply' : 'Listen to reply'} disabled={!hasReplyAudio || mode === 'listening' || busy} onClick={() => void play()}>{mode === 'talking' ? <Pause size={21} fill="currentColor"/> : <Headphones size={22} strokeWidth={1.5}/>}</button>
+        <button data-tour="record" className={`record-control ${mode === 'listening' ? 'recording' : ''}`} disabled={busy} onClick={() => void record()} aria-label={mode === 'listening' ? 'Finish recording' : 'Start recording'}>{mode === 'listening' ? <Square size={17} fill="currentColor"/> : <Mic size={23} strokeWidth={1.7}/>}</button>
+        <button data-tour="playback" className="secondary-control" aria-label={mode === 'talking' ? 'Pause reply' : 'Listen to reply'} disabled={!hasReplyAudio || mode === 'listening' || busy} onClick={() => void play()}>{mode === 'talking' ? <Pause size={21} fill="currentColor"/> : <Headphones size={22} strokeWidth={1.5}/>}</button>
       </div>
       <p className="tap-hint">{mode === 'listening' ? 'Tap to finish your memory' : mode === 'connecting' ? 'Allow microphone access to begin' : 'Tap the mic. Make a little memory.'}</p>
       <div className="privacy"><ShieldCheck size={12} strokeWidth={1.5}/><span>Processed by Sarvam · Memories saved on this device</span></div>
     </footer>
     <input className="visually-hidden" ref={upload} type="file" accept="audio/*" aria-label="Choose an audio memory" onChange={e => { const f = e.target.files?.[0]; if (f) { replaceAudio(f, f.name.split('.').pop() || 'audio'); setError(''); } e.target.value = ''; }}/>
     <audio ref={audio} src={audioUrl || undefined} onEnded={() => { stopMeter(); setMode('ready'); }} onError={() => { if (audioUrl) { stopMeter(); setMode('ready'); setError('This audio format isn’t supported by your browser. Try MP3, WAV, or M4A.'); } }}/>
-  </main>;
+  </main>{tourStep !== null && <GuidedTour step={tourStep} mode={mode} error={error} layoutKey={`${menu}-${showText}-${Boolean(answer)}-${mode}`} onStep={moveTour} onClose={finishTour} onExample={tryExample}/>}</>;
 }
