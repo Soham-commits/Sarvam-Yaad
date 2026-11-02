@@ -9,7 +9,8 @@ from pathlib import Path
 
 from sarvamai import SarvamAI
 
-for line in Path(__file__).with_name('.env').read_text().splitlines():
+env_path = Path(__file__).with_name('.env')
+for line in (env_path.read_text().splitlines() if env_path.exists() else []):
     name, sep, value = line.partition('=')
     if sep and name.strip() == 'SARVAM_API_KEY':
         os.environ.setdefault(name.strip(), value.strip().strip('\"\''))

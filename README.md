@@ -2,6 +2,12 @@
 
 Single-screen mobile app with a silver ElevenLabs orb reacting to real microphone input and Sarvam audio playback.
 
+## Live app
+
+https://yaad-ui.vercel.app/
+
+Hosted frontend and Python API run together over HTTPS. Set `SARVAM_API_KEY` as a secret in the Vercel project environment; never put it in frontend code. GitHub main is connected for production deployments. HTTPS enables browser microphone access on phones. Memory transcripts remain browser-local, so localhost memories do not transfer to the hosted origin.
+
 ## Start locally
 
 1. `python3 -m venv .venv`
