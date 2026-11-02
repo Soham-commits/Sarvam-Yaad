@@ -46,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(413, {'error': 'Use an audio clip under 25 seconds.'})
             data = json.loads(self.rfile.read(length))
             language = data.get('language', 'en-IN')
-            if language not in ('en-IN', 'hi-IN', 'mr-IN'):
+            if language not in ('en-IN', 'hi-IN', 'mr-IN', 'bn-IN', 'ta-IN', 'te-IN', 'gu-IN', 'kn-IN', 'ml-IN', 'pa-IN', 'od-IN'):
                 language = 'en-IN'
             memories = data.get('memories', [])[-15:]
             mode = 'ask' if data.get('mode') == 'ask' else 'record'
@@ -68,7 +68,7 @@ class Handler(BaseHTTPRequestHandler):
                 transcript = speech.transcript.strip()
             if not transcript:
                 return self.send_json(422, {'error': 'No clear speech detected. Please try again.'})
-            language_name = {'en-IN': 'English', 'hi-IN': 'Hindi', 'mr-IN': 'Marathi'}[language]
+            language_name = {'en-IN':'English','hi-IN':'Hindi','mr-IN':'Marathi','bn-IN':'Bengali','ta-IN':'Tamil','te-IN':'Telugu','gu-IN':'Gujarati','kn-IN':'Kannada','ml-IN':'Malayalam','pa-IN':'Punjabi','od-IN':'Odia'}[language]
             archive = json.dumps([{'id': str(m.get('id', ''))[:80], 'text': str(m.get('text', ''))[:3000]} for m in memories], ensure_ascii=False)[:24000]
             if mode == 'ask':
                 instruction = (
@@ -88,7 +88,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
             result = client.chat.completions(
                 model='sarvam-105b-conversations',
-                messages=[{'role': 'system', 'content': instruction + f'Reply in {language_name}. Use native script for Hindi and Marathi.'},
+                messages=[{'role': 'system', 'content': instruction + f'Reply in {language_name}. Use the native script of the selected language.'},
                           {'role': 'user', 'content': f'Recorded memories:\n{archive}\n\nCurrent message:\n{transcript}'}],
                 response_format={'type': 'json_object'}, max_tokens=300, temperature=0.2,
             )

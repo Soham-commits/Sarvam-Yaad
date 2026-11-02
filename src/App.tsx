@@ -1,9 +1,10 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { ArrowDownToLine, AudioLines, Check, ChevronDown, Ellipsis, Headphones, Mic, Pause, Plus, ShieldCheck, Square, X } from 'lucide-react';
+import { ArrowDownToLine, AudioLines, Check, ChevronDown, Ellipsis, Headphones, Mic, Pause, Keyboard, ShieldCheck, Square, X } from 'lucide-react';
 import { Orb } from './Orb';
 
 type Mode = 'idle' | 'connecting' | 'listening' | 'ready' | 'talking' | 'thinking';
 type Memory = {id:string; text:string};
+const LANGUAGES = [{name:'English',code:'en-IN'}, {name:'हिन्दी',code:'hi-IN'}, {name:'मराठी',code:'mr-IN'}, {name:'বাংলা',code:'bn-IN'}, {name:'தமிழ்',code:'ta-IN'}, {name:'తెలుగు',code:'te-IN'}, {name:'ગુજરાતી',code:'gu-IN'}, {name:'ಕನ್ನಡ',code:'kn-IN'}, {name:'മലയാളം',code:'ml-IN'}, {name:'ਪੰਜਾਬੀ',code:'pa-IN'}, {name:'ଓଡ଼ିଆ',code:'od-IN'}];
 export default function App() {
   const [mode, setMode] = useState<Mode>('idle');
   const [seconds, setSeconds] = useState(0);
@@ -19,7 +20,6 @@ export default function App() {
     try { const saved = JSON.parse(localStorage.getItem('yaad-memories') || '[]'); return Array.isArray(saved) ? saved.filter(m => typeof m.id === 'string' && typeof m.text === 'string').slice(-15) : []; } catch { return []; }
   });
   const [answer, setAnswer] = useState<{transcript:string; reply:string; sources:string[]; elapsed:number} | null>(null);
-  const [backend, setBackend] = useState(false);
   const inputLevel = useRef(0), outputLevel = useRef(0);
   const context = useRef<AudioContext | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
@@ -32,7 +32,6 @@ export default function App() {
   const upload = useRef<HTMLInputElement | null>(null);
   const currentUrl = useRef('');
   const busy = mode === 'thinking' || mode === 'connecting';
-  useEffect(() => { fetch('/api/health').then(r => { if(r.ok) setBackend(true); }).catch(() => setBackend(false)); }, []);
   useEffect(() => { try { localStorage.setItem('yaad-memories', JSON.stringify(memories)); } catch { setError('Browser storage is full. Keep this tab open to retain your memories.'); } }, [memories]);
   async function converse(blob?: Blob, text?: string) {
     setMode('thinking'); setError(''); setAnswer(null); audio.current?.pause(); stopMeter();
@@ -40,10 +39,10 @@ export default function App() {
       await getContext();
       let encoded: string | undefined;
       if (blob) encoded = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(blob); });
-      const response = await fetch('/api/converse', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({audio:encoded,mime:blob?.type,text,mode:task,language:language === 'मराठी' ? 'mr-IN' : language === 'हिन्दी' ? 'hi-IN' : 'en-IN', memories}), signal:AbortSignal.timeout(120000)});
+      const response = await fetch('/api/converse', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({audio:encoded,mime:blob?.type,text,mode:task,language:LANGUAGES.find(l => l.name === language)?.code || 'en-IN', memories}), signal:AbortSignal.timeout(120000)});
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Sarvam request failed. Please try again.');
-      setBackend(true); setAnswer(result); setTyped(''); setShowText(false);
+      setAnswer(result); setTyped(''); setShowText(false);
       if (task === 'record') setMemories(previous => [...previous, {id:crypto.randomUUID(),text:result.transcript}].slice(-15));
       if (result.warning) setError(result.warning);
       if (result.audio) {
@@ -94,7 +93,7 @@ export default function App() {
     if (busy) return;
     if (mode === 'listening') { recorder.current?.stop(); return; }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      setError('Recording needs a supported browser on HTTPS or localhost. You can also add an audio file.'); return;
+      setError('Recording needs a supported browser on HTTPS or localhost. Use the keyboard button to type instead.'); return;
     }
     audio.current?.pause(); stopMeter(); setMode('connecting');
     try {
@@ -115,7 +114,7 @@ export default function App() {
     } catch (e) {
       stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; stopMeter();
       setMode(currentUrl.current ? 'ready' : 'idle');
-      setError(e instanceof DOMException && e.name === 'NotAllowedError' ? 'Microphone access is off. Allow it in your browser, or add a voice note.' : 'Couldn’t start the microphone. Try again or add a voice note.');
+      setError(e instanceof DOMException && e.name === 'NotAllowedError' ? 'Microphone access is off. Allow it in your browser, or tap the keyboard to type.' : 'Couldn’t start the microphone. Try again or tap the keyboard to type.');
     }
   }
   async function play() {
@@ -150,7 +149,7 @@ export default function App() {
       <a className="brand" href="#" onClick={e => e.preventDefault()} aria-label="Yaad home"><span className="brand-symbol"><AudioLines size={17} strokeWidth={1.7}/></span>yaad<span className="brand-period">.</span></a>
       <div className="header-actions">
         <div className="popover-anchor"><button className="language glass-small" onClick={() => setMenu(menu === 'language' ? null : 'language')} aria-expanded={menu === 'language'}>{language}<ChevronDown size={12}/></button>
-          {menu === 'language' && <div className="popover language-menu">{['English', 'मराठी', 'हिन्दी'].map(l => <button key={l} onClick={() => { setLanguage(l); setMenu(null); }}>{l}{l === language && <Check size={14}/>}</button>)}<p>Memory language label</p></div>}
+          {menu === 'language' && <div className="popover language-menu">{LANGUAGES.map(l => <button key={l.code} onClick={() => { setLanguage(l.name); setMenu(null); }}>{l.name}{l.name === language && <Check size={14}/>}</button>)}<p>Speak and hear replies in your language</p></div>}
         </div>
         <div className="popover-anchor"><button className="icon-button more" aria-label="More options" aria-expanded={menu === 'more'} onClick={() => setMenu(menu === 'more' ? null : 'more')}><Ellipsis size={21}/></button>
           {menu === 'more' && <div className="popover about-menu"><strong>Your voice, your space.</strong><p>Speech is sent to Sarvam for transcription and replies. Saved transcripts stay in this browser. Spoken replies use an AI narrator, not a cloned family voice.</p><button onClick={() => {setShowText(v => !v);setMenu(null);}}>Type instead</button>{memories.length > 0 && <button onClick={() => { if(window.confirm('Delete saved memory transcripts from this browser?')) {setMemories([]);setAnswer(null);setMenu(null);} }}>Clear {memories.length} saved memories</button>}{audioUrl && <a href={audioUrl} download={`yaad-reply.${format}`}><ArrowDownToLine size={14}/>Download audio</a>}</div>}
@@ -158,7 +157,7 @@ export default function App() {
       </div>
     </header>
     <section className="experience">
-      <div className="intro"><div className="eyebrow"><span/>{backend ? 'SARVAM CONNECTED' : 'VOICE TIME CAPSULE'}{memories.length > 0 && ` · ${memories.length} SAVED`}</div><h1>{title}</h1><p>{subtitle}</p><div className="task-switch"><button disabled={busy || mode === 'listening'} aria-pressed={task === 'record'} onClick={() => {setTask('record');setAnswer(null);}}>Tell a story</button><button disabled={busy || mode === 'listening'} aria-pressed={task === 'ask'} onClick={() => {setTask('ask');setAnswer(null);}}>Ask my capsule</button></div></div>
+      <div className="intro"><h1>{title}</h1><p>{subtitle}</p><div className="task-switch"><button disabled={busy || mode === 'listening'} aria-pressed={task === 'record'} onClick={() => {setTask('record');setAnswer(null);}}>Tell a story</button><button disabled={busy || mode === 'listening'} aria-pressed={task === 'ask'} onClick={() => {setTask('ask');setAnswer(null);}}>Ask my capsule</button></div></div>
       <div className={`orb-stage ${active ? 'is-active' : ''}`} aria-label={mode === 'listening' ? 'Orb reacting to your microphone' : mode === 'talking' ? 'Orb reacting to audio playback' : 'Animated silver voice orb'}>
         <div className="orb-aura"/>
         <Suspense fallback={<div className="orb-loading"/>}><Orb className="orb-canvas" colors={['#eef0f3', '#bac2cc']} seed={73} agentState={mode === 'thinking' ? 'thinking' : mode === 'listening' ? 'listening' : mode === 'talking' ? 'talking' : null} volumeMode={mode === 'thinking' ? 'auto' : 'manual'} inputVolumeRef={inputLevel} outputVolumeRef={outputLevel}/></Suspense>
@@ -171,7 +170,7 @@ export default function App() {
     <footer className="bottom-area">
       {error && <div role="alert" className="error"><span>{error}</span><button aria-label="Dismiss message" onClick={() => setError('')}><X size={15}/></button></div>}
       <div className="control-dock">
-        <button className="secondary-control" aria-label="Type instead" disabled={mode === 'listening' || busy} onClick={() => setShowText(v => !v)}><Plus size={23} strokeWidth={1.5}/></button>
+        <button className="secondary-control" aria-label="Type instead" disabled={mode === 'listening' || busy} onClick={() => setShowText(v => !v)}><Keyboard size={23} strokeWidth={1.5}/></button>
         <button className={`record-control ${mode === 'listening' ? 'recording' : ''}`} disabled={busy} onClick={() => void record()} aria-label={mode === 'listening' ? 'Finish recording' : 'Start recording'}>{mode === 'listening' ? <Square size={17} fill="currentColor"/> : <Mic size={23} strokeWidth={1.7}/>}</button>
         <button className="secondary-control" aria-label={mode === 'talking' ? 'Pause reply' : 'Listen to reply'} disabled={!audioUrl || mode === 'listening' || busy} onClick={() => void play()}>{mode === 'talking' ? <Pause size={21} fill="currentColor"/> : <Headphones size={22} strokeWidth={1.5}/>}</button>
       </div>
