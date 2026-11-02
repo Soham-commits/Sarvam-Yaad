@@ -8,5 +8,15 @@
       "maxDuration": 60,
       "excludeFiles": "{.venv/**,node_modules/**,dist/**,src/**,public/**,.git/**,.env*}"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/memories",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conversation",
+      "destination": "/index.html"
+    }
+  ]
 }

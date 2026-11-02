@@ -1,19 +1,19 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, AudioLines, Check, Globe2, Headphones, Mic, Play, Quote, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Globe2, Headphones, Mic, Play, Quote, MessageCircle, X } from 'lucide-react';
 import './tour.css';
 
-export const TOUR_KEY = 'yaad-guided-tour-v1';
+export const TOUR_KEY = 'yaad-guided-tour-v2';
 export const SAMPLE_MEMORY = 'Demo memory: When I was eight, my grandfather taught me to ride a bicycle in Pune. We celebrated with mango ice cream.';
 
 const steps = [
-  { target: null, icon: Sparkles, label: 'A LITTLE INTRODUCTION', title: 'A story today.\nA memory to return to.', text: 'Welcome to Yaad. Tell a personal story, then ask questions about it and hear answers in your chosen language.', hint: 'A quick, guided tour · About a minute' },
+  { target: null, icon: MessageCircle, label: 'A LITTLE INTRODUCTION', title: 'A story today.\nA memory to return to.', text: 'Welcome to Yaad. Keep stories on the Memories page. Visit Conversation to talk, ask about them, or hear a poem in your chosen voice.', hint: 'A quick, guided tour · About a minute' },
   { target: 'language', icon: Globe2, label: 'MAKE IT YOURS', title: 'Choose what you’d like to hear.', text: 'Tap this selector to choose a reply language. You can speak in another supported language—Yaad detects your speech automatically.', hint: 'Try English, हिन्दी, मराठी, or one of 8 more.' },
-  { target: 'record-mode', icon: AudioLines, label: 'FIRST, SAVE A STORY', title: 'Start with “Tell a story”.', text: 'This mode saves what you share as a memory. Pick one small event with a person, a place, and a detail you can ask about later.', hint: 'Tap the highlighted tab, or choose Next to keep looking around.' },
-  { target: 'record', icon: Mic, label: 'YOUR VOICE IS THE START', title: 'Tap. Speak. Tap to finish.', text: 'Tap the microphone and allow access. Speak for 10–20 seconds, then tap the square to stop. Yaad saves the transcript and asks a spoken follow-up.', hint: 'Prefer typing? Finish the tour and try our labelled example.' },
-  { target: 'playback', icon: Headphones, label: 'LISTEN BACK', title: 'The answer has a voice.', text: 'After processing, the orb moves with the spoken reply. If your browser blocks automatic sound, tap headphones or “Play answer”.', hint: 'Replies use an AI narrator. Family voice cloning is not enabled.' },
-  { target: 'ask-mode', icon: Quote, label: 'NOW, EXPLORE YOUR CAPSULE', title: 'Ask about what you saved.', text: 'Switch to “Ask my capsule”, then use the mic or keyboard to ask a question. For the sample story, ask: “Who taught me to ride a bicycle, and where?”', hint: 'You need to save at least one story first.' },
+  { target: 'record-mode', icon: BookOpen, label: 'FIRST, SAVE A STORY', title: 'Your stories have a room.', text: 'Open Memories to save what you share as a story. Pick one small event with a person, a place, and a detail you can ask about later.', hint: 'Tap Memories, or choose Next to keep looking around.' },
+  { target: 'record', icon: Mic, label: 'YOUR VOICE IS THE START', title: 'Tap. Speak. Tap to finish.', text: 'On Memories, tap the microphone and allow access. Speak for 10–20 seconds, then tap the square to stop. Yaad saves the transcript and asks a spoken follow-up.', hint: 'Prefer typing? Finish the tour and try our labelled example.' },
+  { target: 'playback', icon: Headphones, label: 'LISTEN BACK', title: 'The answer has a voice.', text: 'After processing, the orb moves with the spoken reply. If your browser blocks automatic sound, tap headphones or “Play answer”.', hint: 'Use the voice pill to select the narrator or add a permitted voice reference.' },
+  { target: 'ask-mode', icon: Quote, label: 'NOW, EXPLORE YOUR CAPSULE', title: 'Ask about what you saved.', text: 'Open Conversation. Tap the mic once for hands-free conversation, or use the keyboard to ask a question. For the sample story, ask: “Who taught me to ride a bicycle, and where?”', hint: 'Poems and conversation work immediately. Personal answers need saved stories.' },
   { target: 'evidence', icon: Check, label: 'SEE WHAT THE ANSWER COMES FROM', title: 'A memory you can check.', text: 'A supported answer includes “Original memory”. Expand it to inspect the saved transcript. Ask about a detail you never recorded: Yaad should acknowledge the gap.', hint: 'Memories stay in this browser. A different device starts a separate capsule.' },
-  { target: null, icon: Play, label: 'YOUR FIRST TEST', title: 'Try a little memory.', text: 'We can place a clearly labelled example in the typing box. Press Send to save it and hear a follow-up. Then switch to “Ask my capsule” and ask who taught you to ride a bicycle.', hint: 'You can replay this tour any time from the ••• menu.' },
+  { target: null, icon: Play, label: 'YOUR FIRST TEST', title: 'Try a little memory.', text: 'We can place a clearly labelled example in the typing box. Press Send to save it and hear a follow-up. Then visit Conversation and ask who taught you to ride a bicycle.', hint: 'You can replay this tour any time from the ••• menu.' },
 ];
 
 type Rect = { left: number; top: number; width: number; height: number };
